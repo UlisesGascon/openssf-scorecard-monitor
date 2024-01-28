@@ -1,0 +1,162 @@
+name: Test the action
+on: 
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  normal-run:
+    name: normal
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16.19.0'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci   
+
+    - name: Build
+      run: npm run build
+
+    - name: Create the reporting folder
+      run: mkdir reporting        
+      
+    - uses: ./ # uses the action in the current directory
+      id: scorecard
+      with:
+        scope: reporting/scope.json
+        database: reporting/database.json
+        report: reporting/openssf-scorecard-report.md
+        discovery-enabled: true
+        discovery-orgs: UlisesGascon
+        # The token is needed to create issues, discovery mode and pushing changes in files
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Show output in job summary
+      run: cat reporting/openssf-scorecard-report.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload the output files
+      uses: actions/upload-artifact@v3
+      with:
+        name: report
+        path: reporting/*.*
+    
+    # todo: test the result files to see if they have content that is correct
+    - name: Test if the output files have content
+      run: |
+        # test if the markdown file has content
+        if [ -s reporting/openssf-scorecard-report.md ]; then
+          echo "The markdown file has content"
+        else
+          echo "The markdown file is empty"
+          exit 1
+        fi
+
+        # test if the database file has content
+        if [ -s reporting/database.json ]; then
+          echo "The database file has content"
+        else
+          echo "The database file is empty"
+          exit 1
+        fi
+
+        # test if the scope file has content
+        if [ -s reporting/scope.json ]; then
+          echo "The scope file has content"
+        else
+          echo "The scope file is empty"
+          exit 1
+        fi
+
+    - name: test the actions' output
+      env:
+        OUTPUT: ${{ steps.scorecard.outputs.scores }}
+      run: |
+        if [ -z "$OUTPUT" ]; then
+          echo "The output of the action is empty"
+          exit 1
+        else
+          echo "The output of the action is not empty, which is correct"
+        fi
+
+  with-badges-run:
+    name: wih OSSF badges
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16.19.0'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci   
+
+    - name: Build
+      run: npm run build
+
+    - name: Create the reporting folder
+      run: mkdir reporting        
+      
+    - uses: ./ # uses the action in the current directory
+      id: scorecard
+      with:
+        scope: reporting/scope.json
+        database: reporting/database.json
+        report: reporting/openssf-scorecard-report.md
+        discovery-enabled: true
+        discovery-orgs: UlisesGascon
+        # The token is needed to create issues, discovery mode and pushing changes in files
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        render-badge: true
+    
+    - name: Show output in job summary
+      run: cat reporting/openssf-scorecard-report.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload the output files
+      uses: actions/upload-artifact@v3
+      with:
+        name: report
+        path: reporting/*.*
+
+    # todo: test the result files to see if they have content that is correct
+    - name: Test if the output files have content
+      run: |
+        # test if the markdown file has content
+        if [ -s reporting/openssf-scorecard-report.md ]; then
+          echo "The markdown file has content"
+        else
+          echo "The markdown file is empty"
+          exit 1
+        fi
+
+        # test if the database file has content
+        if [ -s reporting/database.json ]; then
+          echo "The database file has content"
+        else
+          echo "The database file is empty"
+          exit 1
+        fi
+
+        # test if the scope file has content
+        if [ -s reporting/scope.json ]; then
+          echo "The scope file has content"
+        else
+          echo "The scope file is empty"
+          exit 1
+        fi
+
+    - name: test the actions' output
+      env:
+        OUTPUT: ${{ steps.scorecard.outputs.scores }}
+      run: |
+        if [ -z "$OUTPUT" ]; then
+          echo "The output of the action is empty"
+          exit 1
+        else
+          echo "The output of the action is not empty, which is correct"
+        fi
