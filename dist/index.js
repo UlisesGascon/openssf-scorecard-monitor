@@ -47121,7 +47121,7 @@ module.exports = {
 const got = __nccwpck_require__(3061)
 const core = __nccwpck_require__(2186)
 const ejs = __nccwpck_require__(8431)
-const { readFile } = (__nccwpck_require__(7147).promises)
+const { readFile, existsSync, mkdirSync } = (__nccwpck_require__(7147).promises)
 const { join } = __nccwpck_require__(1017)
 const { softAssign } = __nccwpck_require__(7348)
 const databaseSchema = __nccwpck_require__(5324)
@@ -47190,6 +47190,15 @@ const generateIssueContent = async ({ scores, renderBadge, reportTool }) => {
   return ejs.render(template, { scores: scoresInScope, renderBadge, getReportUrl })
 }
 
+const makeDirectory = ({ path }) => {
+  const directories = path.split('/').slice(0, -1).join('/')
+  core.debug(`Making directory ${directories}`)
+  if (!existsSync(directories)) {
+    core.debug('Making directory: ', path)
+    mkdirSync(directories, { recursive: true })
+  }
+}
+
 module.exports = {
   validateDatabaseIntegrity: validateAgainstSchema(databaseSchema, 'database'),
   validateScopeIntegrity: validateAgainstSchema(scopeSchema, 'scope'),
@@ -47197,7 +47206,8 @@ module.exports = {
   saveScore,
   getScore,
   generateReportContent,
-  generateIssueContent
+  generateIssueContent,
+  makeDirectory
 }
 
 
@@ -49160,7 +49170,7 @@ const { readFile, writeFile, stat } = (__nccwpck_require__(7147).promises)
 const { isDifferent } = __nccwpck_require__(9497)
 const { updateOrCreateSegment } = __nccwpck_require__(7794)
 const { generateScores, generateScope } = __nccwpck_require__(4351)
-const { validateDatabaseIntegrity, validateScopeIntegrity } = __nccwpck_require__(1608)
+const { validateDatabaseIntegrity, validateScopeIntegrity, makeDirectory } = __nccwpck_require__(1608)
 
 async function run () {
   let octokit
@@ -49263,6 +49273,8 @@ async function run () {
 
   // Save changes
   core.info('Saving changes to database and report')
+  console.log('Saving changes to database and report')
+  makeDirectory(reportPath)
   await writeFile(databasePath, JSON.stringify(newDatabaseState, null, 2))
   await writeFile(reportPath, reportTagsEnabled
     ? updateOrCreateSegment({
@@ -49275,6 +49287,7 @@ async function run () {
 
   if (discoveryEnabled) {
     core.info('Saving changes to scope...')
+    makeDirectory(scopePath)
     await writeFile(scopePath, JSON.stringify(scope, null, 2))
   }
 

@@ -1,7 +1,7 @@
 const got = require('got')
 const core = require('@actions/core')
 const ejs = require('ejs')
-const { readFile } = require('fs').promises
+const { readFile, existsSync, mkdirSync } = require('fs').promises
 const { join } = require('path')
 const { softAssign } = require('@ulisesgascon/soft-assign-deep-property')
 const databaseSchema = require('../schemas/database.json')
@@ -70,6 +70,15 @@ const generateIssueContent = async ({ scores, renderBadge, reportTool }) => {
   return ejs.render(template, { scores: scoresInScope, renderBadge, getReportUrl })
 }
 
+const makeDirectory = ( path ) => {
+  const directories = path.split('/').slice(0, -1).join('/')
+  core.debug(`Making directory ${directories}`)
+  if (!existsSync(directories)) {
+    core.debug('Making directory: ', path)
+    mkdirSync(directories, { recursive: true })
+  }
+}
+
 module.exports = {
   validateDatabaseIntegrity: validateAgainstSchema(databaseSchema, 'database'),
   validateScopeIntegrity: validateAgainstSchema(scopeSchema, 'scope'),
@@ -77,5 +86,6 @@ module.exports = {
   saveScore,
   getScore,
   generateReportContent,
-  generateIssueContent
+  generateIssueContent,
+  makeDirectory
 }

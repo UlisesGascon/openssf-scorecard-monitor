@@ -7,7 +7,7 @@ const { readFile, writeFile, stat } = require('fs').promises
 const { isDifferent } = require('@ulisesgascon/is-different')
 const { updateOrCreateSegment } = require('@ulisesgascon/text-tags-manager')
 const { generateScores, generateScope } = require('./')
-const { validateDatabaseIntegrity, validateScopeIntegrity } = require('./utils')
+const { validateDatabaseIntegrity, validateScopeIntegrity, makeDirectory } = require('./utils')
 
 async function run () {
   let octokit
@@ -110,6 +110,8 @@ async function run () {
 
   // Save changes
   core.info('Saving changes to database and report')
+  console.log('Saving changes to database and report')
+  makeDirectory(reportPath)
   await writeFile(databasePath, JSON.stringify(newDatabaseState, null, 2))
   await writeFile(reportPath, reportTagsEnabled
     ? updateOrCreateSegment({
@@ -122,6 +124,7 @@ async function run () {
 
   if (discoveryEnabled) {
     core.info('Saving changes to scope...')
+    makeDirectory(scopePath)
     await writeFile(scopePath, JSON.stringify(scope, null, 2))
   }
 
